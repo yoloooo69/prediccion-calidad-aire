@@ -56,7 +56,10 @@ def main():
     dl_run(df)
 
     sep("Extra - Analisis R")
-    run_r()
+    try:
+        run_r()
+    except Exception as e:
+        print(f"[pipeline] R no disponible ({e}). Ejecuta manualmente:\n  Rscript src/r_analysis.R\n")
 
     print(f"\nPipeline completado en {time.time()-start:.1f}s")
     print("Lanza la app con:  streamlit run app.py\n")

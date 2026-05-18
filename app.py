@@ -179,49 +179,54 @@ elif page == "Modelos":
     ]
     sel_mod = st.radio("Selecciona gráfica:", opciones_mod, horizontal=True)
 
-    if ml_model is not None and scaler is not None and feature_cols is not None:
-        from sklearn.model_selection import train_test_split
+    with st.spinner("Generando gráfica..."):
+        # Curvas DL — solo necesita dl_history.pkl
+        if sel_mod == "Curvas entrenamiento DL":
+            hist_path = os.path.join(DATA_DIR, "dl_history.pkl")
+            if os.path.exists(hist_path):
+                with open(hist_path, "rb") as f:
+                    hist = pickle.load(f)
+                st.plotly_chart(plot_dl_training(hist), use_container_width=True)
+            else:
+                st.info("Historial DL no encontrado. Vuelve a ejecutar run_pipeline.py.")
 
-        available = [c for c in feature_cols if c in df.columns]
-        df_model  = df[available + [TARGET]].dropna()
-        X_sc = scaler.transform(df_model[available].values)
-        y    = df_model[TARGET].values
-        _, X_test, _, y_test = train_test_split(X_sc, y, test_size=0.2, random_state=42)
-        y_pred_ml = ml_model.predict(X_test)
-        best_name = type(ml_model).__name__
+        # Gráficas que necesitan scaler + feature_cols para preparar X_test / y_test
+        elif scaler is not None and feature_cols is not None:
+            from sklearn.model_selection import train_test_split
 
-        with st.spinner("Generando gráfica..."):
-            if sel_mod == "Predicho vs Real (ML)":
-                st.plotly_chart(plot_ml_predictions(y_test, y_pred_ml, best_name),
-                                use_container_width=True)
+            available = [c for c in feature_cols if c in df.columns]
+            df_model  = df[available + [TARGET]].dropna()
+            X_sc  = scaler.transform(df_model[available].values)
+            y     = df_model[TARGET].values
+            _, X_test, _, y_test = train_test_split(X_sc, y, test_size=0.2, random_state=42)
 
-            elif sel_mod == "Importancia de variables":
-                if hasattr(ml_model, "feature_importances_"):
-                    st.plotly_chart(
-                        plot_feature_importance(available, ml_model.feature_importances_, best_name),
-                        use_container_width=True)
-                else:
-                    st.info("El modelo no expone importancia de variables.")
-
-            elif sel_mod == "Curvas entrenamiento DL":
-                hist_path = os.path.join(DATA_DIR, "dl_history.pkl")
-                if os.path.exists(hist_path):
-                    with open(hist_path, "rb") as f:
-                        hist = pickle.load(f)
-                    st.plotly_chart(plot_dl_training(hist), use_container_width=True)
-                else:
-                    st.info("Historial DL no encontrado. Vuelve a ejecutar run_pipeline.py.")
-
-            elif sel_mod == "Predicho vs Real (DL)":
+            if sel_mod == "Predicho vs Real (DL)":
                 if dl_model is not None:
-                    y_pred_dl = dl_model.predict(X_sc, verbose=0).flatten()
-                    _, _, _, y_test_dl = train_test_split(X_sc, y, test_size=0.2, random_state=42)
-                    st.plotly_chart(plot_dl_predictions(y_test_dl, y_pred_dl),
+                    y_pred_dl = dl_model.predict(X_test, verbose=0).flatten()
+                    st.plotly_chart(plot_dl_predictions(y_test, y_pred_dl),
                                     use_container_width=True)
                 else:
                     st.info("Modelo DL no encontrado.")
-    else:
-        st.warning("Modelos no encontrados. Ejecuta `run_pipeline.py` primero.")
+
+            elif ml_model is not None:
+                y_pred_ml = ml_model.predict(X_test)
+                best_name = type(ml_model).__name__
+
+                if sel_mod == "Predicho vs Real (ML)":
+                    st.plotly_chart(plot_ml_predictions(y_test, y_pred_ml, best_name),
+                                    use_container_width=True)
+
+                elif sel_mod == "Importancia de variables":
+                    if hasattr(ml_model, "feature_importances_"):
+                        st.plotly_chart(
+                            plot_feature_importance(available, ml_model.feature_importances_, best_name),
+                            use_container_width=True)
+                    else:
+                        st.info("El modelo no expone importancia de variables.")
+            else:
+                st.warning("Modelo ML no encontrado. Ejecuta `run_pipeline.py` primero.")
+        else:
+            st.warning("Modelos no encontrados. Ejecuta `run_pipeline.py` primero.")
 
 
 # ── PREDICCIÓN ───────────────────────────────────────────────────

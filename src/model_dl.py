@@ -80,7 +80,10 @@ def run(df: pd.DataFrame) -> dict:
         pickle.dump(history.history, f)
     print(f"[model_dl] Historial de entrenamiento guardado -> {hist_path}")
 
-    # Las gráficas se generan dinámicamente en app.py con Plotly
+    # Guardar predicciones del test set para mostrarlas en la app sin necesitar TF
+    pd.DataFrame({"y_real": y_test, "y_pred": y_pred}).to_csv(
+        os.path.join(DATA_DIR, "dl_predictions.csv"), index=False)
+
     model.save(os.path.join(MODELS_DIR, "dl_model.keras"))
     pd.DataFrame([{"model": "DeepLearning", "MAE": round(mae,4), "RMSE": round(rmse,4), "R2": round(r2,4)}]).to_csv(
         os.path.join(DATA_DIR, "dl_results.csv"), index=False)

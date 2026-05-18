@@ -201,12 +201,17 @@ elif page == "Modelos":
             _, X_test, _, y_test = train_test_split(X_sc, y, test_size=0.2, random_state=42)
 
             if sel_mod == "Predicho vs Real (DL)":
-                if dl_model is not None:
+                dl_pred_path = os.path.join(DATA_DIR, "dl_predictions.csv")
+                if os.path.exists(dl_pred_path):
+                    dl_preds = pd.read_csv(dl_pred_path)
+                    st.plotly_chart(plot_dl_predictions(dl_preds["y_real"].values, dl_preds["y_pred"].values),
+                                    use_container_width=True)
+                elif dl_model is not None:
                     y_pred_dl = dl_model.predict(X_test, verbose=0).flatten()
                     st.plotly_chart(plot_dl_predictions(y_test, y_pred_dl),
                                     use_container_width=True)
                 else:
-                    st.info("Modelo DL no encontrado.")
+                    st.info("Predicciones DL no encontradas. Ejecuta run_pipeline.py.")
 
             elif ml_model is not None:
                 y_pred_ml = ml_model.predict(X_test)
